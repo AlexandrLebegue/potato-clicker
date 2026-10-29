@@ -64,6 +64,7 @@ rayons de lumière → **pluie de mini-patates**.
 - **zustand** (état client) + persistance `localStorage`
 - **canvas-confetti** (particules)
 - **vitest** (tests de la logique pure)
+- **Capacitor 8** (empaquetage Android)
 
 ## 🚀 Commandes
 
@@ -74,9 +75,33 @@ npm run dev -- -H 0.0.0.0 -p 3100   # démo accessible sur le réseau
 npm run build        # build de production
 npm start            # sert le build de production
 npm run lint         # ESLint
-npm test             # vitest (40 tests : coûts exponentiels, formatage,
+npm test             # vitest (46 tests : coûts exponentiels, formatage,
                      # prestige, gains hors-ligne, combo, météo, succès…)
 ```
+
+## 🤖 Android (APK)
+
+Le jeu est empaqueté en **APK** avec [Capacitor](https://capacitorjs.com)
+(`@capacitor/core` + `@capacitor/android`) :
+
+- `next.config.ts` est en **`output: "export"`** : `npm run build` génère un
+  site statique dans `out/` (images non optimisées, aucun backend requis).
+- `capacitor.config.ts` : `appId = com.alexandrelebegue.potatoclicker`,
+  `appName = "Potato Clicker"`, `webDir = out`.
+
+```bash
+# Build local de l'APK debug (nécessite Node >= 22, Java 21 et l'Android SDK)
+npm run build
+npx cap sync android
+cd android && ./gradlew assembleDebug
+# -> android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Le workflow GitHub **`.github/workflows/android.yml`** (push sur `main`,
+pull requests, ou manuel via *Actions*) fait exactement la même chose sur
+`ubuntu-latest` (Node 22, Java 21 Temurin) et **publie l'APK debug en
+artifact** : `potato-clicker-debug.apk`, téléchargeable dans l'onglet
+*Artifacts* de chaque run.
 
 ## 📁 Organisation
 
