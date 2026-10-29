@@ -48,7 +48,7 @@ function SoilTexture({ soilId }: { soilId: string }) {
 export const SoilPlot: FC<{ soilId: string; className?: string }> = ({ soilId, className }) => {
   const soil = soilById(soilId);
   const nutrients = useGame((s) => s.nutrients);
-  const waterActive = useGame((s) => s.waterUntil > Date.now());
+  const waterActive = useGame((s) => s.waterUntil > s.lastTickAt);
   const pct = Math.round(nutrients * 100);
   const barColor = nutrients > 0.5 ? "#7ec850" : nutrients > 0.2 ? "#ffd23f" : "#e04444";
   return (
