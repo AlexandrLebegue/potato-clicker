@@ -164,8 +164,7 @@ export interface OfflineResult {
 export function computeOffline(
   snapshot: GameSnapshot,
   lastSeen: number,
-  now: number,
-  rng: Rng = Math.random
+  now: number
 ): OfflineResult {
   const raw = now - lastSeen;
   if (raw < CONST.OFFLINE_MIN_MS) return { elapsedMs: 0, gain: 0 };

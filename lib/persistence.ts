@@ -7,6 +7,8 @@ export interface SaveFile {
   v: 1;
   savedAt: number;
   state: GameSnapshot & {
+    waterReadyAt: number;
+    achievements: string[];
     lastSeen: number;
     earthAdds: number;
     soundOn: boolean;
@@ -16,6 +18,8 @@ export interface SaveFile {
 }
 
 export function defaultSnapshot(): GameSnapshot & {
+  waterReadyAt: number;
+  achievements: string[];
   lastSeen: number;
   earthAdds: number;
   soundOn: boolean;
@@ -35,6 +39,8 @@ export function defaultSnapshot(): GameSnapshot & {
     soilId: "basic",
     nutrients: 1,
     waterUntil: 0,
+    waterReadyAt: 0,
+    achievements: [],
     seeds: 0,
     prestiges: 0,
     combo: 0,
@@ -72,6 +78,10 @@ function sanitize(raw: Partial<SaveFile>): SaveFile | null {
     soilId: SOILS.some((so) => so.id === s.soilId) ? (s.soilId as string) : "basic",
     nutrients: Math.min(1, Math.max(0, num(s.nutrients, d.nutrients))),
     waterUntil: num(s.waterUntil, d.waterUntil),
+    waterReadyAt: num(s.waterReadyAt, d.waterReadyAt),
+    achievements: Array.isArray(s.achievements)
+      ? s.achievements.filter((x) => typeof x === "string")
+      : [],
     seeds: num(s.seeds, d.seeds),
     prestiges: num(s.prestiges, d.prestiges),
     combo: 0,
