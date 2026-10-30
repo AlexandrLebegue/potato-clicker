@@ -2,6 +2,18 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [v2.0.1] — 2026-10-30
+
+### Correction (retour Chef)
+
+- **Le menu « Réglages » n'apparaît plus deux fois sur téléphone** : le
+  **bouton « Réglages » de la barre du bas est supprimé** (il doublonnait
+  l'**icône engrenage du bandeau haut**, toujours présente). La barre du bas
+  mobile ne garde que **Boutique** et **Stats**, répartis en **2 boutons
+  équilibrés** (`flex-1`).
+- Captures Playwright `360×740` / `412×915` régénérées ; lint, 55 tests et build
+  verts.
+
 ## [v2.0.0] — 2026-10-30
 
 ### Conserver la progression d'une mise à jour d'APK à l'autre (priorité 1)

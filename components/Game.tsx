@@ -15,7 +15,7 @@ import { OfflineModal } from "./OfflineModal";
 import { StatsModal } from "./StatsModal";
 import { PrestigeModal } from "./PrestigeModal";
 import { SettingsModal } from "./SettingsModal";
-import { GearIcon, ShopIcon, StatsIcon } from "./icons";
+import { ShopIcon, StatsIcon } from "./icons";
 
 export function Game() {
   const mounted = useGame((s) => s.mounted);
@@ -83,7 +83,7 @@ export function Game() {
           </aside>
         </div>
 
-        {/* Barre mobile : boutique, réglages, stats */}
+        {/* Barre mobile : boutique, stats (les réglages sont dans le bandeau haut) */}
         <div className="flex gap-2 border-t-4 border-[#3a2414]/30 bg-[#fff8e8] p-2 pb-[max(env(safe-area-inset-bottom),8px)] lg:hidden">
           <button
             onClick={() => setShopOpen(true)}
@@ -91,13 +91,6 @@ export function Game() {
             className="cartoon-border flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#e07f3f] py-2.5 font-black text-white"
           >
             <ShopIcon id="farm" className="h-6 w-6" /> Boutique
-          </button>
-          <button
-            onClick={() => useGame.getState().setModal("settings")}
-            aria-label="Ouvrir les réglages"
-            className="cartoon-border flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#8b5cf6] py-2.5 font-black text-white"
-          >
-            <GearIcon className="h-6 w-6" /> Réglages
           </button>
           <button
             onClick={() => useGame.getState().setModal("stats")}
