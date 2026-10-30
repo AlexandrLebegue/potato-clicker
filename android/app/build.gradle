@@ -1,5 +1,22 @@
 apply plugin: 'com.android.application'
 
+// Versioning : en CI, POTATO_VERSION_CODE = numéro de run GitHub (toujours
+// croissant) et POTATO_VERSION_NAME = tag (ex. v2.0.0) ou 0.0.0-ci<n>.
+// En local : versionCode volontairement élevé pour pouvoir installer un build
+// local par-dessus un build CI déjà installé (et vice-versa, cf. README).
+def env = System.getenv()
+def appVersionCode = (env.POTATO_VERSION_CODE ?: '2000000').toInteger()
+def appVersionName = (env.POTATO_VERSION_NAME ?: '2.0.0-dev')
+
+// Clé de signature fixe (la même pour chaque build) : indispensable pour que
+// Android accepte une mise à jour par-dessus l'APK précédente (même signature,
+// versionCode plus grand) au lieu de refuser l'installation.
+// Le keystore n'est jamais dans le dépôt : en CI il est décodé depuis le secret
+// GitHub POTATO_KEYSTORE_B64 (voir .github/workflows/android.yml), en local on
+// pointe dessus via POTATO_KEYSTORE_FILE (ex. ~/potato-keystore/potato-clicker.keystore).
+def keystoreFile = file(env.POTATO_KEYSTORE_FILE ?: '../keystore/potato-clicker.keystore')
+def hasFixedKey = keystoreFile.exists() && env.POTATO_KEYSTORE_STORE_PASSWORD != null
+
 android {
     namespace = "com.alexandrelebegue.potatoclicker"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +24,8 @@ android {
         applicationId "com.alexandrelebegue.potatoclicker"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +33,25 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    if (hasFixedKey) {
+        signingConfigs {
+            potato {
+                storeFile keystoreFile
+                storePassword env.POTATO_KEYSTORE_STORE_PASSWORD
+                keyAlias (env.POTATO_KEYSTORE_ALIAS ?: 'potato')
+                keyPassword (env.POTATO_KEYSTORE_KEY_PASSWORD ?: env.POTATO_KEYSTORE_STORE_PASSWORD)
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        if (hasFixedKey) {
+            // Le build debug utilise aussi la clé fixe : c'est lui que la CI publie.
+            debug { signingConfig signingConfigs.potato }
+            release { signingConfig signingConfigs.potato }
         }
     }
 }
