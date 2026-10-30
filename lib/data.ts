@@ -346,7 +346,9 @@ export const CONST = {
   WEATHER_MAX_INTERVAL_MS: 120_000,
   WEATHER_MIN_DURATION_MS: 20_000,
   WEATHER_MAX_DURATION_MS: 40_000,
-  SAVE_KEY: "potato-farm-save-v1",
+  SAVE_KEY: "potato-farm-save",
+  LEGACY_SAVE_KEY: "potato-farm-save-v1",
+  SAVE_BACKUP_KEY: "potato-farm-save-backup",
   TICK_MS: 250,
   AUTOSAVE_MS: 5000,
 } as const;

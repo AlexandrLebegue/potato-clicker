@@ -15,7 +15,8 @@ import { GoldenPotato } from "./GoldenPotato";
 import { OfflineModal } from "./OfflineModal";
 import { StatsModal } from "./StatsModal";
 import { PrestigeModal } from "./PrestigeModal";
-import { ShopIcon, StatsIcon } from "./icons";
+import { SettingsModal } from "./SettingsModal";
+import { GearIcon, ShopIcon, StatsIcon } from "./icons";
 
 export function Game() {
   const mounted = useGame((s) => s.mounted);
@@ -36,11 +37,18 @@ export function Game() {
     const autosaveId = setInterval(save, CONST.AUTOSAVE_MS);
     window.addEventListener("beforeunload", save);
     document.addEventListener("visibilitychange", onVisibility);
+    // L'audio ne peut démarrer qu'après un geste utilisateur (navigateur/WebView) :
+    // chaque pointerdown/keydown débloque l'AudioContext et applique les réglages.
+    const onGesture = () => g().ensureAudio();
+    window.addEventListener("pointerdown", onGesture);
+    window.addEventListener("keydown", onGesture);
     return () => {
       clearInterval(tickId);
       clearInterval(autosaveId);
       window.removeEventListener("beforeunload", save);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pointerdown", onGesture);
+      window.removeEventListener("keydown", onGesture);
       save();
     };
   }, []);
@@ -79,14 +87,21 @@ export function Game() {
           </aside>
         </div>
 
-        {/* Barre mobile : tiroir bas pour la boutique */}
-        <div className="absolute inset-x-0 bottom-0 z-30 flex gap-2 border-t-4 border-[#3a2414]/30 bg-[#fff8e8] p-2 lg:hidden">
+        {/* Barre mobile : boutique, réglages, stats */}
+        <div className="flex gap-2 border-t-4 border-[#3a2414]/30 bg-[#fff8e8] p-2 pb-[max(env(safe-area-inset-bottom),8px)] lg:hidden">
           <button
             onClick={() => setShopOpen(true)}
             aria-label="Ouvrir la boutique"
             className="cartoon-border flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#e07f3f] py-2.5 font-black text-white"
           >
             <ShopIcon id="farm" className="h-6 w-6" /> Boutique
+          </button>
+          <button
+            onClick={() => useGame.getState().setModal("settings")}
+            aria-label="Ouvrir les réglages"
+            className="cartoon-border flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#8b5cf6] py-2.5 font-black text-white"
+          >
+            <GearIcon className="h-6 w-6" /> Réglages
           </button>
           <button
             onClick={() => useGame.getState().setModal("stats")}
@@ -135,6 +150,7 @@ export function Game() {
         {offline && <OfflineModal />}
         {modal === "stats" && <StatsModal />}
         {modal === "prestige" && <PrestigeModal />}
+        {modal === "settings" && <SettingsModal />}
       </AnimatePresence>
     </div>
   );

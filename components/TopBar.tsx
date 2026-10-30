@@ -5,6 +5,7 @@ import { useGame, useCpsPreview } from "../store/useGame";
 import { prestigeGain } from "../lib/game";
 import {
   CoinIcon,
+  GearIcon,
   SeedIcon,
   SoundOnIcon,
   SoundOffIcon,
@@ -69,6 +70,13 @@ export function TopBar() {
           className="cartoon-border rounded-2xl bg-[#fff8e8] p-2"
         >
           <StatsIcon className="h-6 w-6" />
+        </button>
+        <button
+          onClick={() => setModal("settings")}
+          aria-label="Réglages (son, musique, sauvegarde)"
+          className="cartoon-border rounded-2xl bg-[#fff8e8] p-2"
+        >
+          <GearIcon className="h-6 w-6" />
         </button>
         <button
           onClick={toggleSound}

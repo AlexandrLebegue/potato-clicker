@@ -312,6 +312,38 @@ export function TrophyIcon({ className }: { className?: string }) {
   );
 }
 
+export function GearIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" className={className} aria-hidden="true">
+      <path
+        d="M24 4 L27.5 8.5 L33 9 L36 13.5 L41 15.5 L41.5 21 L45.5 24.5 L41.5 28.5 L41 34 L36 36 L33 40.5 L27.5 41 L24 45.5 L20.5 41 L15 40.5 L12 36 L7 34 L6.5 28.5 L2.5 24.5 L6.5 21 L7 15.5 L12 13.5 L15 9 L20.5 8.5 Z"
+        fill="#fff"
+        stroke={OUT}
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <circle cx="24" cy="24" r="7.5" fill="#7ec850" stroke={OUT} strokeWidth="3" />
+    </svg>
+  );
+}
+
+export function MusicNoteIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" className={className} aria-hidden="true">
+      <path
+        d="M19 35 L19 11 L37 7 L37 29"
+        fill="none"
+        stroke={OUT}
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <ellipse cx="13.5" cy="35.5" rx="6.5" ry="5.5" fill="#8b5cf6" stroke={OUT} strokeWidth="3" />
+      <ellipse cx="31.5" cy="31.5" rx="6.5" ry="5.5" fill="#8b5cf6" stroke={OUT} strokeWidth="3" />
+    </svg>
+  );
+}
+
 export function CloseIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 48 48" className={className} aria-hidden="true">

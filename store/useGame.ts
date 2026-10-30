@@ -24,13 +24,20 @@ import {
   totalBuildings,
   type GameSnapshot,
 } from "../lib/game";
+import { trackById } from "../lib/musicTracks";
 import {
   defaultSnapshot,
   loadSave,
   writeSave,
   clearSave,
+  importSave,
+  exportSave,
+  SAVE_VERSION,
+  type GameFullState,
 } from "../lib/persistence";
 import { playSound, setSoundEnabled } from "../lib/sound";
+import { primeAudio, setMuted, setFxVolume, setMusicVolume } from "../lib/audio";
+import { musicEngine } from "../lib/music";
 import { fireFx } from "../lib/fx";
 import { fxTierForPrice } from "../lib/game";
 
@@ -56,7 +63,7 @@ interface Ephemeral {
   shaking: boolean;
   potatoRain: { seq: number; count: number } | null;
   offline: { elapsedMs: number; gain: number } | null;
-  modal: null | "stats" | "prestige";
+  modal: null | "stats" | "prestige" | "settings";
   waterFxUntil: number;
   earthFxUntil: number;
   toastSeq: number;
@@ -71,14 +78,23 @@ export interface GameStore extends PersistedState, Ephemeral {
   buyBuilding: (id: string) => void;
   buyUpgrade: (id: string) => void;
   buySoil: (id: string) => void;
+  buyTrack: (id: string) => void;
+  selectTrack: (id: string) => void;
+  toggleMusic: () => void;
+  toggleClickNote: () => void;
+  setMusicVolume: (v: number) => void;
+  setFxVolume: (v: number) => void;
   water: () => void;
   addEarth: () => void;
   doPrestige: () => void;
   hardReset: () => void;
   toggleSound: () => void;
+  ensureAudio: () => void;
   setModal: (m: GameStore["modal"]) => void;
   closeOffline: () => void;
   dismissToast: (id: number) => void;
+  exportSaveCode: () => string;
+  importSaveCode: (code: string) => boolean;
 }
 
 function rand(min: number, max: number): number {
@@ -102,6 +118,52 @@ function snapshotOf(s: GameStore): GameSnapshot {
     prestiges: s.prestiges,
     combo: s.combo,
   };
+}
+
+function stateOf(s: GameStore): GameFullState {
+  const now = Date.now();
+  return {
+    coins: s.coins,
+    runEarned: s.runEarned,
+    lifetimeEarned: s.lifetimeEarned,
+    clicks: s.clicks,
+    goldenClicks: s.goldenClicks,
+    buildings: s.buildings,
+    upgrades: s.upgrades,
+    soilsUnlocked: s.soilsUnlocked,
+    soilId: s.soilId,
+    nutrients: s.nutrients,
+    waterUntil: s.waterUntil,
+    waterReadyAt: s.waterReadyAt,
+    achievements: s.achievements,
+    seeds: s.seeds,
+    prestiges: s.prestiges,
+    lastSeen: now,
+    earthAdds: s.earthAdds,
+    soundOn: s.soundOn,
+    playMs: s.playMs,
+    maxCombo: s.maxCombo,
+    combo: 0,
+    musicUnlocked: s.musicUnlocked,
+    musicSelected: s.musicSelected,
+    musicOn: s.musicOn,
+    musicVolume: s.musicVolume,
+    fxVolume: s.fxVolume,
+    clickNote: s.clickNote,
+  };
+}
+
+/** Synchronise le moteur de musique avec l'état (sans effet si audio non débloqué). */
+function syncMusicEngine(s: GameStore): void {
+  if (s.musicOn && s.musicSelected) {
+    if (musicEngine.trackId !== s.musicSelected) {
+      musicEngine.load(s.musicSelected);
+    }
+    musicEngine.setClickMode(s.clickNote);
+    if (!s.clickNote) musicEngine.play();
+  } else {
+    musicEngine.stop();
+  }
 }
 
 function makeInitial(): GameStore {
@@ -133,14 +195,23 @@ function makeInitial(): GameStore {
     buyBuilding: () => {},
     buyUpgrade: () => {},
     buySoil: () => {},
+    buyTrack: () => {},
+    selectTrack: () => {},
+    toggleMusic: () => {},
+    toggleClickNote: () => {},
+    setMusicVolume: () => {},
+    setFxVolume: () => {},
     water: () => {},
     addEarth: () => {},
     doPrestige: () => {},
     hardReset: () => {},
     toggleSound: () => {},
+    ensureAudio: () => {},
     setModal: () => {},
     closeOffline: () => {},
     dismissToast: () => {},
+    exportSaveCode: () => "",
+    importSaveCode: () => false,
   };
 }
 
@@ -189,6 +260,10 @@ export const useGame = create<GameStore>()((set, get) => {
       set({ ...base, mounted: true, lastTickAt: now });
       setSoundEnabled(get().soundOn);
 
+      // Moteur de musique : chargé ici, démarré au premier geste utilisateur.
+      musicEngine.load(get().musicSelected);
+      musicEngine.setClickMode(get().clickNote && get().musicOn);
+
       // Gains hors-ligne
       if (save) {
         const off = computeOffline(snapshotOf(get()), base.lastSeen, now);
@@ -215,34 +290,7 @@ export const useGame = create<GameStore>()((set, get) => {
     save: () => {
       const s = get();
       if (!s.mounted) return;
-      const now = Date.now();
-      writeSave({
-        v: 1,
-        savedAt: now,
-        state: {
-          coins: s.coins,
-          runEarned: s.runEarned,
-          lifetimeEarned: s.lifetimeEarned,
-          clicks: s.clicks,
-          goldenClicks: s.goldenClicks,
-          buildings: s.buildings,
-          upgrades: s.upgrades,
-          soilsUnlocked: s.soilsUnlocked,
-          soilId: s.soilId,
-          nutrients: s.nutrients,
-          waterUntil: s.waterUntil,
-          waterReadyAt: s.waterReadyAt,
-          achievements: s.achievements,
-          seeds: s.seeds,
-          prestiges: s.prestiges,
-          combo: 0,
-          lastSeen: now,
-          earthAdds: s.earthAdds,
-          soundOn: s.soundOn,
-          playMs: s.playMs,
-          maxCombo: s.maxCombo,
-        },
-      });
+      writeSave({ version: SAVE_VERSION, savedAt: Date.now(), state: stateOf(s) });
     },
 
     tick: (now: number) => {
@@ -342,6 +390,10 @@ export const useGame = create<GameStore>()((set, get) => {
         lastClickFx: { seq, x, y, value: power },
       });
       playSound("click");
+      // Mode « 1 clic = 1 note » : le clic joue la note suivante du morceau.
+      if (s.musicOn && s.clickNote && s.musicSelected) {
+        musicEngine.playNext();
+      }
       checkAchievements();
     },
 
@@ -425,6 +477,69 @@ export const useGame = create<GameStore>()((set, get) => {
       checkAchievements();
     },
 
+    buyTrack: (id) => {
+      const s = get();
+      const def = trackById(id);
+      if (!def) return;
+      if (s.musicUnlocked.includes(id)) {
+        get().selectTrack(id);
+        return;
+      }
+      if (s.seeds < def.cost) {
+        playSound("denied");
+        return;
+      }
+      set({
+        seeds: s.seeds - def.cost,
+        musicUnlocked: [...s.musicUnlocked, id],
+        musicSelected: id,
+        musicOn: true,
+      });
+      pushToast("Nouveau morceau !", def.name);
+      playSound("prestige");
+      syncMusicEngine(get());
+      get().save();
+    },
+
+    selectTrack: (id) => {
+      const s = get();
+      const def = trackById(id);
+      if (!def || !s.musicUnlocked.includes(id)) return;
+      set({ musicSelected: id });
+      syncMusicEngine(get());
+      get().save();
+    },
+
+    toggleMusic: () => {
+      const s = get();
+      if (s.musicOn && !s.musicSelected) return;
+      set({ musicOn: !s.musicOn });
+      syncMusicEngine(get());
+      get().save();
+    },
+
+    toggleClickNote: () => {
+      const s = get();
+      if (!s.musicSelected) return;
+      set({ clickNote: !s.clickNote });
+      syncMusicEngine(get());
+      get().save();
+    },
+
+    setMusicVolume: (v) => {
+      const vol = Math.min(1, Math.max(0, v));
+      set({ musicVolume: vol });
+      setMusicVolume(vol);
+      get().save();
+    },
+
+    setFxVolume: (v) => {
+      const vol = Math.min(1, Math.max(0, v));
+      set({ fxVolume: vol });
+      setFxVolume(vol);
+      get().save();
+    },
+
     water: () => {
       const now = Date.now();
       const s = get();
@@ -487,6 +602,7 @@ export const useGame = create<GameStore>()((set, get) => {
 
     hardReset: () => {
       clearSave();
+      musicEngine.stop();
       const fresh = defaultSnapshot();
       set({
         ...fresh,
@@ -513,6 +629,22 @@ export const useGame = create<GameStore>()((set, get) => {
       set({ soundOn });
       setSoundEnabled(soundOn);
       if (soundOn) playSound("toast");
+      get().save();
+    },
+
+    /**
+     * À appeler sur chaque geste utilisateur (pointerdown/keydown) :
+     * débloque l'AudioContext (règles navigateur/WebView) puis applique
+     * volumes et lecture de la musique.
+     */
+    ensureAudio: () => {
+      const ready = primeAudio();
+      if (!ready) return;
+      const s = get();
+      setMuted(!s.soundOn);
+      setFxVolume(s.fxVolume);
+      setMusicVolume(s.musicVolume);
+      syncMusicEngine(s);
     },
 
     setModal: (m) => set({ modal: m }),
@@ -521,6 +653,13 @@ export const useGame = create<GameStore>()((set, get) => {
 
     dismissToast: (id) =>
       set({ toasts: get().toasts.filter((t) => t.id !== id) }),
+
+    exportSaveCode: () => {
+      const s = get();
+      return exportSave({ version: SAVE_VERSION, savedAt: Date.now(), state: stateOf(s) });
+    },
+
+    importSaveCode: (code) => importSave(code),
   };
 });
 

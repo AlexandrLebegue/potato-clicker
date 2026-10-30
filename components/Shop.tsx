@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import { BUILDINGS, CLICK_UPGRADES, SOILS } from "../lib/data";
+import { MUSIC_TRACKS } from "../lib/musicTracks";
 import { buildingCost, totalBuildings } from "../lib/game";
 import { formatNumber } from "../lib/format";
 import { useGame } from "../store/useGame";
-import { LockIcon, ShopIcon } from "./icons";
+import { LockIcon, MusicNoteIcon, SeedIcon, ShopIcon } from "./icons";
 
-type Tab = "production" | "clics" | "terres";
+type Tab = "production" | "clics" | "terres" | "musique";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "production", label: "Production" },
   { id: "clics", label: "Clics" },
   { id: "terres", label: "Terres" },
+  { id: "musique", label: "Musique" },
 ];
 
 function PriceLabel({ cost, coins }: { cost: number; coins: number }) {
@@ -234,13 +236,90 @@ function SoilRow() {
   );
 }
 
+function TrackRow() {
+  const seeds = useGame((s) => s.seeds);
+  const unlocked = useGame((s) => s.musicUnlocked);
+  const selected = useGame((s) => s.musicSelected);
+  const buyTrack = useGame((s) => s.buyTrack);
+  const selectTrack = useGame((s) => s.selectTrack);
+  return (
+    <ul className="flex flex-col gap-2.5">
+      {MUSIC_TRACKS.map((t) => {
+        const owned = unlocked.includes(t.id);
+        const active = t.id === selected;
+        const affordable = seeds >= t.cost;
+        return (
+          <li
+            key={t.id}
+            className={`flex items-center gap-2.5 rounded-2xl border-4 bg-[#fff8e8] p-2 ${
+              active ? "border-[#8a5f00]" : "border-[#3a2414]"
+            } ${!owned && !affordable ? "opacity-75" : ""}`}
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-[#3a2414]/30 bg-white">
+              <MusicNoteIcon className="h-8 w-8" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="truncate font-black text-[#3a2414]">{t.name}</span>
+                {active && (
+                  <span className="shrink-0 rounded-full bg-[#8b5cf6] px-2 text-xs font-black text-white">
+                    lecture
+                  </span>
+                )}
+              </div>
+              <div className="truncate text-xs font-semibold text-[#8a6d3b]">{t.desc}</div>
+              <div className="mt-0.5 flex items-center justify-between gap-2">
+                {owned ? (
+                  active ? (
+                    <span className="text-sm font-black text-[#8a6d3b]">Sélectionné</span>
+                  ) : (
+                    <button
+                      onClick={() => selectTrack(t.id)}
+                      className="cartoon-border rounded-xl bg-[#8b5cf6] px-3 py-1.5 text-sm font-black text-white"
+                    >
+                      Jouer
+                    </button>
+                  )
+                ) : (
+                  <>
+                    <span className="flex items-center gap-1 font-black text-[#2d6a12] tabular-nums">
+                      <SeedIcon className="h-4 w-4" /> {t.cost}
+                    </span>
+                    <button
+                      onClick={() => buyTrack(t.id)}
+                      disabled={!affordable}
+                      aria-label={
+                        affordable
+                          ? `Acheter : ${t.name} pour ${t.cost} graines`
+                          : `Impossible d'acheter : ${t.name}`
+                      }
+                      className={`cartoon-border rounded-xl px-3 py-1.5 text-sm font-black ${
+                        affordable
+                          ? "sheen bg-[#8b5cf6] text-white"
+                          : "cursor-not-allowed bg-[#d8cdb8] text-[#8a7a5c]"
+                      }`}
+                    >
+                      Débloquer
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export function Shop({ className = "" }: { className?: string }) {
   const [tab, setTab] = useState<Tab>("production");
   const totalB = useGame((s) => totalBuildings(s));
+  const seeds = useGame((s) => s.seeds);
   return (
     <div className={`flex flex-col ${className}`}>
       <div
-        className="grid grid-cols-3 gap-1.5 rounded-2xl border-4 border-[#3a2414] bg-[#fff8e8] p-1.5"
+        className="grid grid-cols-4 gap-1.5 rounded-2xl border-4 border-[#3a2414] bg-[#fff8e8] p-1.5"
         role="tablist"
         aria-label="Boutique"
       >
@@ -281,6 +360,15 @@ export function Shop({ className = "" }: { className?: string }) {
               Le type de terre multiplie toute votre production
             </p>
             <SoilRow />
+          </div>
+        )}
+        {tab === "musique" && (
+          <div>
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-[#8a6d3b]">
+              Morceaux joués par un lecteur Web Audio — débloquables avec vos graines
+              ({seeds} actuellement)
+            </p>
+            <TrackRow />
           </div>
         )}
       </div>
