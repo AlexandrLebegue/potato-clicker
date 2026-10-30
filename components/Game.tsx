@@ -7,7 +7,6 @@ import { useGame } from "../store/useGame";
 import { WeatherLayer } from "./WeatherLayer";
 import { TopBar } from "./TopBar";
 import { PotatoScene } from "./PotatoScene";
-import { ComboGauge } from "./ComboGauge";
 import { Shop } from "./Shop";
 import { Toasts } from "./Toasts";
 import { FxLayer } from "./FxLayer";
@@ -55,7 +54,7 @@ export function Game() {
 
   if (!mounted) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-[#7ec8f7]">
+      <div className="flex h-app items-center justify-center bg-[#7ec8f7]">
         <div className="cartoon-border rounded-3xl bg-[#fff8e8] px-8 py-6 text-2xl font-black text-[#5a3a1c]">
           Préparation du potager…
         </div>
@@ -64,7 +63,7 @@ export function Game() {
   }
 
   return (
-    <div className="relative h-dvh overflow-hidden">
+    <div className="h-app relative overflow-hidden">
       <WeatherLayer />
 
       <div
@@ -73,12 +72,9 @@ export function Game() {
         <TopBar />
 
         <div className="flex min-h-0 flex-1">
-          {/* Zone centrale : la patate dans son pot */}
-          <main className="flex min-w-0 flex-1 flex-col items-center overflow-y-auto overscroll-contain">
-            <div className="flex w-full flex-col items-center px-3 pb-24 pt-2 lg:pb-4">
-              <PotatoScene />
-              <ComboGauge />
-            </div>
+          {/* Zone centrale : la patate dans son pot (sans défilement : tout tient à l'écran) */}
+          <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <PotatoScene />
           </main>
 
           {/* Boutique : panneau fixe (desktop) */}
@@ -133,7 +129,7 @@ export function Game() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 32 }}
-              className="absolute inset-x-0 bottom-0 h-[75dvh] overflow-hidden rounded-t-3xl border-t-4 border-[#3a2414] bg-[#fff8e8] p-3"
+              className="absolute inset-x-0 bottom-0 h-[75dvh] overflow-hidden rounded-t-3xl border-t-4 border-[#3a2414] bg-[#fff8e8] p-3 pb-[max(env(safe-area-inset-bottom),12px)]"
             >
               <div className="mx-auto mb-1 h-1.5 w-16 rounded-full bg-[#3a2414]/30" aria-hidden="true" />
               <Shop className="h-full min-h-0" />

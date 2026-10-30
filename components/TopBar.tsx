@@ -24,7 +24,7 @@ export function TopBar() {
   const gain = prestigeGain(runEarned);
 
   return (
-    <header className="relative z-20 flex items-center justify-between gap-2 px-3 py-2 sm:px-5">
+    <header className="relative z-20 flex items-center justify-between gap-2 px-3 pb-2 pt-[max(env(safe-area-inset-top),8px)] sm:px-5">
       <div className="flex min-w-0 items-center gap-3">
         <h1 className="hidden text-xl font-black text-white [text-shadow:0_2px_0_#3a2414] md:block">
           🥔 Potato Farm

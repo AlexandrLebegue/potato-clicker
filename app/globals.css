@@ -10,6 +10,12 @@ body {
   height: 100%;
 }
 
+/* Hauteur d'écran dynamique (safe-area WebView Android) avec repli 100vh. */
+.h-app {
+  height: 100vh;
+  height: 100dvh;
+}
+
 body {
   margin: 0;
   font-family: var(--font-game);

@@ -11,6 +11,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // cover : indispensable pour les safe-areas (notch) via env() ;
+  // userScalable : non au zoom pincement (c'est un jeu, pas une page).
+  viewportFit: "cover",
+  userScalable: false,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

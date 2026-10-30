@@ -6,8 +6,9 @@ import { evolutionOf, accessoriesOf, totalPurchases } from "../lib/game";
 import { formatNumber } from "../lib/format";
 import { useGame } from "../store/useGame";
 import { PotatoSvg } from "./PotatoSvg";
-import { SoilPlot } from "./SoilPlot";
+import { SoilPlot, NutrientGauge } from "./SoilPlot";
 import { ActionBar } from "./ActionBar";
+import { ComboGauge } from "./ComboGauge";
 import { WateringCanIcon } from "./icons";
 
 interface Floater {
@@ -60,10 +61,10 @@ export function PotatoScene() {
   }
 
   return (
-    <div className="relative mx-auto flex w-[min(92vw,440px)] flex-col items-center">
-      {/* Patate dans son pot */}
-      <div className="relative z-10 w-[min(52vw,300px)]">
-        <div className="relative">
+    <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden px-2">
+      {/* Patate dans son pot — dimensionnée en hauteur pour tenir sur téléphone */}
+      <div className="relative z-10 aspect-[11/10] h-[min(34dvh,46vw)] max-h-[300px]">
+        <div className="relative h-full w-full">
           {/* Arrosoir animé */}
           <AnimatePresence>
             {waterVisible && !reduced && (
@@ -134,7 +135,7 @@ export function PotatoScene() {
               animate={{ scale: [1, 1.15, 0.93, 1] }}
               transition={{ duration: 0.3, times: [0, 0.35, 0.7, 1] }}
             >
-              <PotatoSvg evolution={evolution} accessories={accessories} className="h-auto w-full" />
+              <PotatoSvg evolution={evolution} accessories={accessories} className="h-full w-full" />
             </motion.div>
           </motion.div>
 
@@ -162,11 +163,20 @@ export function PotatoScene() {
         </div>
       </div>
 
-      {/* Pot de terre */}
-      <SoilPlot soilId={soilId} className="-mt-9 w-[min(80vw,380px)]" />
+      {/* Pot de terre : la surface est visible sous la patate (le pot n'est plus masqué) */}
+      <SoilPlot
+        soilId={soilId}
+        className="-mt-9 w-[min(62vw,52dvh)] max-w-[430px] lg:-mt-[70px] lg:w-[min(40vw,52dvh)]"
+      />
+
+      {/* Jauge de nutriments (HTML, sur le devant du pot : jamais masquée) */}
+      <NutrientGauge />
 
       {/* Actions */}
       <ActionBar />
+
+      {/* Combo */}
+      <ComboGauge />
     </div>
   );
 }

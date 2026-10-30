@@ -26,9 +26,9 @@ function WaterButton() {
       onClick={water}
       disabled={active || cooling}
       aria-label="Arroser la patate (×2 pendant 30 secondes, recharge 60 secondes)"
-      className="cartoon-border relative flex items-center gap-2 rounded-2xl bg-[#4d9fe0] px-4 py-3 text-white font-extrabold disabled:cursor-not-allowed"
+      className="cartoon-border relative flex items-center gap-2 rounded-2xl bg-[#4d9fe0] px-3 py-2 font-extrabold text-white sm:px-4 sm:py-3 disabled:cursor-not-allowed"
     >
-      <WateringCanIcon className="h-8 w-8" />
+      <WateringCanIcon className="h-6 w-6 sm:h-8 sm:w-8" />
       <span>
         {active
           ? `×2 · ${Math.ceil((waterUntil - now) / 1000)} s`
@@ -58,9 +58,9 @@ function EarthButton() {
       onClick={addEarth}
       disabled={!ready || !affordable}
       aria-label={`Ajouter de la terre, coût ${CONST.EARTH_COST} patacoins`}
-      className="cartoon-border flex items-center gap-2 rounded-2xl bg-[#a8763e] px-4 py-3 text-white font-extrabold disabled:cursor-not-allowed disabled:opacity-60"
+      className="cartoon-border flex items-center gap-2 rounded-2xl bg-[#a8763e] px-3 py-2 font-extrabold text-white sm:px-4 sm:py-3 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      <ShovelIcon className="h-8 w-8" />
+      <ShovelIcon className="h-6 w-6 sm:h-8 sm:w-8" />
       <span>Terre +{CONST.EARTH_COST}</span>
     </button>
   );
@@ -87,7 +87,7 @@ function SoilSelector() {
                 ? `${soil.name} (×${soil.mult})${activeSoil ? ", terre active" : ""}`
                 : `Débloquer ${soil.name}, ×${soil.mult}, pour ${formatNumber(soil.cost)} patacoins`
             }
-            className={`relative flex h-11 w-11 items-center justify-center rounded-full border-4 transition-transform ${
+            className={`relative flex h-9 w-9 items-center justify-center rounded-full border-4 transition-transform sm:h-11 sm:w-11 ${
               activeSoil ? "scale-110 border-[#3a2414]" : "border-[#3a2414]/40"
             } ${!unlocked && !affordable ? "opacity-50" : ""}`}
             style={{ background: soil.color }}
@@ -96,7 +96,7 @@ function SoilSelector() {
               className="absolute -bottom-1 left-1/2 h-2 w-10 -translate-x-1/2 rounded-full"
               style={{ background: soil.darkColor }}
             />
-            {!unlocked && <LockIcon className="h-6 w-6 opacity-90" />}
+            {!unlocked && <LockIcon className="h-5 w-5 sm:h-6 sm:w-6 opacity-90" />}
             <span className="sr-only">{soil.name}</span>
           </button>
         );
@@ -107,8 +107,8 @@ function SoilSelector() {
 
 export function ActionBar() {
   return (
-    <div className="mt-3 flex flex-col items-center gap-3">
-      <div className="flex flex-wrap items-center justify-center gap-3">
+    <div className="mt-2 flex flex-col items-center gap-2 sm:mt-3 sm:gap-3">
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
         <WaterButton />
         <EarthButton />
       </div>
