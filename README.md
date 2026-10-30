@@ -49,10 +49,14 @@ rayons de lumière → **pluie de mini-patates**.
   4 chants de marins du **domaine public** (Blow the Man Down, Drunken Sailor,
   The Wellerman, Sailor's Hornpipe — transcriptions approchées) + 3
   compositions originales, dont **« Le Corsaire de la baie »** (ambiance
-  pirate, sol mineur). Mode **« 1 clic = 1 note »** : chaque clic sur la
-  patate joue la note suivante, la mélodie avance au rythme des clics.
+  pirate, sol mineur). **Pas de lecture en arrière-plan** : chaque clic sur
+  la patate joue la *note suivante* du morceau sélectionné — c'est le joueur
+  qui crée le rythme ; la note a une durée courte et fixe et est coupée par
+  le clic suivant ; si vous vous arrêtez de cliquer, le son s'arrête.
+  L'indicateur de progression dans le morceau est visible dans la boutique
+  (onglet *Musique*) et dans les réglages.
   Réglages (bouton engrenage) : volume musique / effets, coupure du son,
-  musique on/off. Le son ne démarre qu'après votre premier geste
+  notes on/off. Le son ne démarre qu'après votre premier geste
   (contrainte navigateur/WebView).
 - 🌱 **Graines légendaires** : monnaie de prestige, gagnées en « Replantant »
   (`⌊√(gagné/1 M)⌋` graine(s)`) ; elles débloquent les morceaux de musique.
@@ -201,8 +205,8 @@ lib/
   persistence.ts      # sauvegarde versionnée : chargement, migration v1->v2,
                       # mise de côté, assainissement, export/import de code
   audio.ts            # AudioContext partagé + buses master/effets/musique
-  music.ts            # lecteur « MIDI-like » Web Audio (oscillateurs),
-                      # mode « 1 clic = 1 note »
+  music.ts            # lecteur « MIDI-like » Web Audio (oscillateurs) :
+                      # 1 clic = la note suivante (pas de lecture en boucle)
   musicTracks.ts      # les 7 morceaux stockés en notes (+ prix en graines)
   sound.ts            # sons d'effets Web Audio (sur la bus « effets »)
   fx.ts               # bus d'événements pour les effets visuels

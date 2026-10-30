@@ -2,6 +2,32 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [v2.0.2] — 2026-10-30
+
+### Musique : plus aucune lecture en arrière-plan (retour Chef)
+
+- **La lecture automatique / en boucle est supprimée** du moteur Web Audio
+  (`lib/music.ts`) : le **seul mode** est maintenant **« 1 clic = 1 note »** —
+  chaque clic sur la patate joue la **note suivante** du morceau sélectionné.
+  C'est le joueur qui crée le rythme ; la note a une **durée courte et fixe**
+  (~0,18 s) et est **coupée par le clic suivant** ; **aucune note sans clic** :
+  si le joueur s'arrête, le son s'arrête.
+- Le toggle « 1 clic = 1 note » des réglages est **supprimé** (c'est devenu le
+  seul mode) : il reste un interrupteur **« Une note sonne à chaque clic sur
+  la patate »** (on/off) + volume musique. Le champ `clickNote` n'existe plus
+  dans la sauvegarde (les vieilles sauvegardes qui l'avaient se chargent sans
+  problème, le champ est ignoré).
+- **Indicateur de progression dans le morceau** (nouveau composant
+  `components/TrackProgress.tsx`) : note suivante / total + barre de
+  progression, visible dans la **boutique (onglet Musique**, ligne du morceau
+  sélectionné) et dans les **réglages** ; remis à zéro au changement de
+  morceau.
+- Tests : `tests/music.test.ts` ajouté (fréquences, données des 7 morceaux,
+  moteur sans AudioContext) ; tests de persistance mis à jour.
+- **Correction** : `noteToFreq` ne reconnaissait que les dièses — le `Bb4`
+  d'un morceau original était joué à la mauvaise hauteur depuis v2.0.0 ;
+  les bémols (Bb, Db, Eb, Gb, Ab) sont maintenant gérés.
+
 ## [v2.0.1] — 2026-10-30
 
 ### Correction (retour Chef)

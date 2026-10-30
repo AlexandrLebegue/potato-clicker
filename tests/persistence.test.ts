@@ -160,9 +160,23 @@ describe("persistence (localStorage, format versionné)", () => {
     expect(loaded?.state.musicOn).toBe(false);
     expect(loaded?.state.musicVolume).toBeGreaterThan(0);
     expect(loaded?.state.fxVolume).toBeGreaterThan(0);
-    expect(loaded?.state.clickNote).toBe(false);
     // la migration a été écrite dans la clé courante
     expect(st().getItem(CONST.SAVE_KEY)).toContain(`"version":${SAVE_VERSION}`);
+  });
+
+  it("une vieille sauvegarde v2 avec `clickNote` se charge (champ ignoré)", () => {
+    const id = MUSIC_TRACKS[0].id;
+    st().setItem(
+      CONST.SAVE_KEY,
+      JSON.stringify({
+        version: 2,
+        state: { musicUnlocked: [id], musicSelected: id, clickNote: true },
+      })
+    );
+    const loaded = loadSave();
+    expect(loaded).not.toBeNull();
+    expect(loaded?.state.musicSelected).toBe(id);
+    expect("clickNote" in loaded!.state).toBe(false);
   });
 
   it("migre une sauvegarde v1 depuis l'ancienne clé localStorage", () => {
@@ -237,7 +251,6 @@ describe("export / import de la sauvegarde", () => {
     s.musicOn = true;
     s.musicVolume = 0.7;
     s.fxVolume = 0.3;
-    s.clickNote = true;
     s.soundOn = true;
     return { version: SAVE_VERSION, savedAt: s.lastSeen, state: s };
   }
@@ -269,7 +282,6 @@ describe("export / import de la sauvegarde", () => {
     expect(loaded?.state.achievements).toEqual(["first_click", "clicks_100"]);
     expect(loaded?.state.soilId).toBe("compost");
     expect(loaded?.state.musicSelected).toBe(MUSIC_TRACKS[1].id);
-    expect(loaded?.state.clickNote).toBe(true);
     expect(loaded?.state.soundOn).toBe(true);
   });
 

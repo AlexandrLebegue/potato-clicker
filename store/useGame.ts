@@ -67,6 +67,9 @@ interface Ephemeral {
   waterFxUntil: number;
   earthFxUntil: number;
   toastSeq: number;
+  // notes déjà jouées sur le morceau sélectionné (pour l'indicateur de
+  // progression ; remis à 0 quand on change de morceau)
+  musicNotesPlayed: number;
 }
 
 export interface GameStore extends PersistedState, Ephemeral {
@@ -81,7 +84,6 @@ export interface GameStore extends PersistedState, Ephemeral {
   buyTrack: (id: string) => void;
   selectTrack: (id: string) => void;
   toggleMusic: () => void;
-  toggleClickNote: () => void;
   setMusicVolume: (v: number) => void;
   setFxVolume: (v: number) => void;
   water: () => void;
@@ -149,20 +151,19 @@ function stateOf(s: GameStore): GameFullState {
     musicOn: s.musicOn,
     musicVolume: s.musicVolume,
     fxVolume: s.fxVolume,
-    clickNote: s.clickNote,
   };
 }
 
-/** Synchronise le moteur de musique avec l'état (sans effet si audio non débloqué). */
+/**
+ * Synchronise le moteur de musique avec l'état. Plus de lecture en
+ * arrière-plan : le moteur ne fait que mémoriser le morceau sélectionné —
+ * les notes ne sonnent que quand le joueur clique sur la patate.
+ */
 function syncMusicEngine(s: GameStore): void {
-  if (s.musicOn && s.musicSelected) {
-    if (musicEngine.trackId !== s.musicSelected) {
-      musicEngine.load(s.musicSelected);
-    }
-    musicEngine.setClickMode(s.clickNote);
-    if (!s.clickNote) musicEngine.play();
+  if (s.musicSelected) {
+    if (musicEngine.trackId !== s.musicSelected) musicEngine.load(s.musicSelected);
   } else {
-    musicEngine.stop();
+    musicEngine.load(null);
   }
 }
 
@@ -187,6 +188,7 @@ function makeInitial(): GameStore {
     waterFxUntil: 0,
     earthFxUntil: 0,
     toastSeq: 0,
+    musicNotesPlayed: 0,
     boot: () => {},
     save: () => {},
     tick: () => {},
@@ -198,7 +200,6 @@ function makeInitial(): GameStore {
     buyTrack: () => {},
     selectTrack: () => {},
     toggleMusic: () => {},
-    toggleClickNote: () => {},
     setMusicVolume: () => {},
     setFxVolume: () => {},
     water: () => {},
@@ -260,9 +261,9 @@ export const useGame = create<GameStore>()((set, get) => {
       set({ ...base, mounted: true, lastTickAt: now });
       setSoundEnabled(get().soundOn);
 
-      // Moteur de musique : chargé ici, démarré au premier geste utilisateur.
+      // Moteur de musique : le morceau est mémorisé ici ; aucune lecture ne
+      // démarre toute seule (les notes ne sonnent qu'au clic sur la patate).
       musicEngine.load(get().musicSelected);
-      musicEngine.setClickMode(get().clickNote && get().musicOn);
 
       // Gains hors-ligne
       if (save) {
@@ -390,9 +391,12 @@ export const useGame = create<GameStore>()((set, get) => {
         lastClickFx: { seq, x, y, value: power },
       });
       playSound("click");
-      // Mode « 1 clic = 1 note » : le clic joue la note suivante du morceau.
-      if (s.musicOn && s.clickNote && s.musicSelected) {
-        musicEngine.playNext();
+      // 1 clic = 1 note : le clic joue la note SUIVANTE du morceau (c'est le
+      // joueur qui crée le rythme ; plus de lecture en arrière-plan — si on
+      // s'arrête de cliquer, le son s'arrête).
+      if (s.musicOn && s.musicSelected) {
+        const consumed = musicEngine.playNext();
+        if (consumed >= 0) set({ musicNotesPlayed: consumed });
       }
       checkAchievements();
     },
@@ -494,6 +498,7 @@ export const useGame = create<GameStore>()((set, get) => {
         musicUnlocked: [...s.musicUnlocked, id],
         musicSelected: id,
         musicOn: true,
+        musicNotesPlayed: 0,
       });
       pushToast("Nouveau morceau !", def.name);
       playSound("prestige");
@@ -505,7 +510,7 @@ export const useGame = create<GameStore>()((set, get) => {
       const s = get();
       const def = trackById(id);
       if (!def || !s.musicUnlocked.includes(id)) return;
-      set({ musicSelected: id });
+      set({ musicSelected: id, musicNotesPlayed: 0 });
       syncMusicEngine(get());
       get().save();
     },
@@ -514,14 +519,6 @@ export const useGame = create<GameStore>()((set, get) => {
       const s = get();
       if (s.musicOn && !s.musicSelected) return;
       set({ musicOn: !s.musicOn });
-      syncMusicEngine(get());
-      get().save();
-    },
-
-    toggleClickNote: () => {
-      const s = get();
-      if (!s.musicSelected) return;
-      set({ clickNote: !s.clickNote });
       syncMusicEngine(get());
       get().save();
     },
@@ -602,7 +599,7 @@ export const useGame = create<GameStore>()((set, get) => {
 
     hardReset: () => {
       clearSave();
-      musicEngine.stop();
+      musicEngine.load(null);
       const fresh = defaultSnapshot();
       set({
         ...fresh,
@@ -644,7 +641,8 @@ export const useGame = create<GameStore>()((set, get) => {
       setMuted(!s.soundOn);
       setFxVolume(s.fxVolume);
       setMusicVolume(s.musicVolume);
-      syncMusicEngine(s);
+      // Aucune lecture à redémarrer : les notes ne sonnent qu'au clic
+      // (le moteur lit l'AudioContext au moment du clic).
     },
 
     setModal: (m) => set({ modal: m }),

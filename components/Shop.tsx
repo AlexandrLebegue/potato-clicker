@@ -7,6 +7,7 @@ import { buildingCost, totalBuildings } from "../lib/game";
 import { formatNumber } from "../lib/format";
 import { useGame } from "../store/useGame";
 import { LockIcon, MusicNoteIcon, SeedIcon, ShopIcon } from "./icons";
+import { TrackProgress } from "./TrackProgress";
 
 type Tab = "production" | "clics" | "terres" | "musique";
 
@@ -263,7 +264,7 @@ function TrackRow() {
                 <span className="truncate font-black text-[#3a2414]">{t.name}</span>
                 {active && (
                   <span className="shrink-0 rounded-full bg-[#8b5cf6] px-2 text-xs font-black text-white">
-                    lecture
+                    sélectionné
                   </span>
                 )}
               </div>
@@ -271,7 +272,7 @@ function TrackRow() {
               <div className="mt-0.5 flex items-center justify-between gap-2">
                 {owned ? (
                   active ? (
-                    <span className="text-sm font-black text-[#8a6d3b]">Sélectionné</span>
+                    <TrackProgress className="mt-1 w-full" />
                   ) : (
                     <button
                       onClick={() => selectTrack(t.id)}

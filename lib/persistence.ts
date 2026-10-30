@@ -38,11 +38,10 @@ export interface GameFullState {
   combo: number; // toujours sauvegardé à 0 (jamais pertinent au chargement)
   // ---- v2 : musique ----
   musicUnlocked: string[]; // ids de morceaux débloqués
-  musicSelected: string | null; // morceau sélectionné (joué en boucle)
-  musicOn: boolean;
+  musicSelected: string | null; // morceau sélectionné (note jouée à chaque clic)
+  musicOn: boolean; // chaque clic sur la patate joue la note suivante
   musicVolume: number; // 0..1
   fxVolume: number; // 0..1
-  clickNote: boolean; // mode « 1 clic = 1 note »
 }
 
 export interface SaveFile {
@@ -79,7 +78,6 @@ export function defaultSnapshot(): GameFullState {
     musicOn: false,
     musicVolume: 0.6,
     fxVolume: 0.6,
-    clickNote: false,
   };
 }
 
@@ -133,7 +131,9 @@ export function sanitizeState(raw: unknown): GameFullState {
     musicOn: typeof s.musicOn === "boolean" ? s.musicOn : false,
     musicVolume: Math.min(1, Math.max(0, num(s.musicVolume, d.musicVolume))),
     fxVolume: Math.min(1, Math.max(0, num(s.fxVolume, d.fxVolume))),
-    clickNote: typeof s.clickNote === "boolean" ? s.clickNote : false,
+    // NB : `clickNote` (v2.0.0/2.0.1) n'existe plus — la note au clic est le
+    // seul mode ; le champ éventuel des vieilles sauvegardes est simplement
+    // ignoré au chargement.
   };
   // Sol actif mais non possédé ? on repart sur un sol possédé.
   if (!state.soilsUnlocked.includes(state.soilId)) state.soilId = "basic";

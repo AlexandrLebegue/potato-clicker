@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useGame } from "../store/useGame";
 import { MusicNoteIcon, SoundOffIcon, SoundOnIcon } from "./icons";
 import { Modal } from "./Modal";
+import { TrackProgress } from "./TrackProgress";
 
 function Toggle({
   checked,
@@ -88,12 +89,10 @@ export function SettingsModal() {
   const musicVolume = useGame((s) => s.musicVolume);
   const musicOn = useGame((s) => s.musicOn);
   const musicSelected = useGame((s) => s.musicSelected);
-  const clickNote = useGame((s) => s.clickNote);
   const toggleSound = useGame((s) => s.toggleSound);
   const setFxVolume = useGame((s) => s.setFxVolume);
   const setMusicVolume = useGame((s) => s.setMusicVolume);
   const toggleMusic = useGame((s) => s.toggleMusic);
-  const toggleClickNote = useGame((s) => s.toggleClickNote);
   const setModal = useGame((s) => s.setModal);
 
   const [exportCode, setExportCode] = useState("");
@@ -162,20 +161,21 @@ export function SettingsModal() {
           disabled={!hasTrack}
           label={
             hasTrack
-              ? "Jouer la musique"
+              ? "Une note sonne à chaque clic sur la patate"
               : "Débloquez un morceau dans la boutique (graines)"
           }
         />
         <VolumeRow label="Volume musique" value={musicVolume} onChange={setMusicVolume} />
-        <Toggle
-          checked={clickNote}
-          onChange={toggleClickNote}
-          disabled={!hasTrack}
-          label="1 clic = 1 note (la mélodie avance avec vos clics)"
-        />
+        {hasTrack && (
+          <div className="rounded-2xl border-4 border-[#3a2414] bg-white p-3">
+            <TrackProgress />
+          </div>
+        )}
         <p className="text-[11px] font-semibold text-[#8a6d3b]">
           Les morceaux se débloquent avec des <b>graines légendaires</b> (prestige « Replanter »),
-          onglet <b>Musique</b> de la boutique. Le son démarre après votre premier clic
+          onglet <b>Musique</b> de la boutique. Chaque clic sur la patate joue la note suivante
+          du morceau sélectionné : plus de lecture en arrière-plan, si vous vous arrêtez de
+          cliquer, le son s&rsquo;arrête. Le son démarre après votre premier clic
           (règle des navigateurs).
         </p>
       </div>
