@@ -43,11 +43,28 @@ rayons de lumière → **pluie de mini-patates**.
 - ⚡ **Combo** : clics rapides = multiplicateur temporaire avec jauge (jusqu'à ×2.5).
 - 📊 **Statistiques** : total gagné, clics, temps de jeu, meilleur combo… +
   bouton **reset** complet (double confirmation).
-- 🔊 **Sons optionnels** (Web Audio API, aucun asset), **coupés par défaut**,
-  bouton mute dans le bandeau.
+- 🎵 **Musique** : lecteur « MIDI-like » 100 % Web Audio (oscillateurs, aucun
+  fichier audio), **7 morceaux** à débloquer dans la boutique (onglet
+  *Musique*) avec des **graines légendaires** (1 → 25, prix croissants) :
+  4 chants de marins du **domaine public** (Blow the Man Down, Drunken Sailor,
+  The Wellerman, Sailor's Hornpipe — transcriptions approchées) + 3
+  compositions originales, dont **« Le Corsaire de la baie »** (ambiance
+  pirate, sol mineur). Mode **« 1 clic = 1 note »** : chaque clic sur la
+  patate joue la note suivante, la mélodie avance au rythme des clics.
+  Réglages (bouton engrenage) : volume musique / effets, coupure du son,
+  musique on/off. Le son ne démarre qu'après votre premier geste
+  (contrainte navigateur/WebView).
+- 🌱 **Graines légendaires** : monnaie de prestige, gagnées en « Replantant »
+  (`⌊√(gagné/1 M)⌋` graine(s)`) ; elles débloquent les morceaux de musique.
 
 ### UX / accessibilité
 
+- **Téléphone sans défilement** : tout tient dans `100dvh` (+ safe-areas
+  notch/gestes : `viewport-fit=cover`, `env(safe-area-inset-*)`) — la patate
+  est **posée sur la terre** (visible sous elle), la boutique est un tiroir
+  bas **défilable à l'intérieur uniquement**, les menus sont des panneaux.
+  Vérifié automatiquement avec **Playwright** en portrait `360×740` et
+  `412×915` (captures dans `tests/screenshots/`, script `scripts/visual-check.mjs`).
 - Responsive : patate au centre, boutique à droite sur desktop, **tiroir bas**
   sur mobile.
 - Boutons achetables mis en évidence (brillance animée), non achetables grisés
@@ -63,7 +80,7 @@ rayons de lumière → **pluie de mini-patates**.
 - **framer-motion** (danse, rebonds, toasts, tiroir)
 - **zustand** (état client) + persistance `localStorage`
 - **canvas-confetti** (particules)
-- **vitest** (tests de la logique pure)
+- **vitest** + **Playwright** (tests de la logique + vérification visuelle)
 - **Capacitor 8** (empaquetage Android)
 
 ## 🚀 Commandes
@@ -72,11 +89,16 @@ rayons de lumière → **pluie de mini-patates**.
 npm install          # dépendances
 npm run dev          # serveur de dev (http://localhost:3000)
 npm run dev -- -H 0.0.0.0 -p 3100   # démo accessible sur le réseau
-npm run build        # build de production
+npm run build        # build de production (export statique -> out/)
 npm start            # sert le build de production
 npm run lint         # ESLint
-npm test             # vitest (46 tests : coûts exponentiels, formatage,
-                     # prestige, gains hors-ligne, combo, météo, succès…)
+npm test             # vitest (55 tests : coûts exponentiels, formatage,
+                      # migration de sauvegarde v1 -> v2, export/import,
+                      # prestige, gains hors-ligne, combo, météo, succès…)
+# Vérification visuelle du layout (necessite le build + Chromium Playwright) :
+npm run build && node scripts/visual-check.mjs
+# Régénérer toutes les icônes (Android + web) depuis assets/icon/*.svg :
+node scripts/generate-icons.mjs
 ```
 
 ## 🤖 Android (APK)
@@ -87,38 +109,110 @@ Le jeu est empaqueté en **APK** avec [Capacitor](https://capacitorjs.com)
 - `next.config.ts` est en **`output: "export"`** : `npm run build` génère un
   site statique dans `out/` (images non optimisées, aucun backend requis).
 - `capacitor.config.ts` : `appId = com.alexandrelebegue.potatoclicker`,
-  `appName = "Potato Clicker"`, `webDir = out`.
+  `appName = "Potato Farm"`, `webDir = out`.
+- L'icône est une **patate cartoon** du style du jeu : source SVG dans
+  `assets/icon/`, toutes les tailles générées par
+  `node scripts/generate-icons.mjs` (icône **adaptative** Android
+  foreground/background + legacy carré/ronde, favicon, apple-touch-icon,
+  web manifest — aucun outil payant).
 
 ```bash
-# Build local de l'APK debug (nécessite Node >= 22, Java 21 et l'Android SDK)
+# Build local de l'APK (nécessite Node >= 22, Java 21 et l'Android SDK)
 npm run build
 npx cap sync android
 cd android && ./gradlew assembleDebug
 # -> android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
+### 🔐 Signature fixe & mise à jour sans perte de données
+
+**Pourquoi c'est important.** Avant, l'APK debug de la CI était signé avec une
+clé *debug* **regénérée sur chaque runner** : Android refusait alors
+l'installation de la nouvelle version par-dessus l'ancienne (signatures
+différentes) et il fallait **désinstaller** l'appli = **perte de la
+sauvegarde** (`localStorage`).
+
+**La correction.** Tous les builds (CI et locale) sont signés avec **un même
+keystore fixe** (RSA 2048, validité 30 ans, alias `potato`) :
+
+- Le keystore vit **hors du dépôt** : `~/potato-keystore/potato-clicker.keystore`
+  (jamais commité ; `android/keystore/` est dans `.gitignore`).
+- **Côté CI** : il est stocké en **secrets GitHub** et décodé à la volée par
+  le workflow. Les **4 secrets à créer** (Réglages → Secrets → *Actions*) :
+  | Secret | Contenu |
+  |---|---|
+  | `POTATO_KEYSTORE_B64` | `base64 potato-clicker.keystore` (le fichier binaire encodé) |
+  | `POTATO_KEYSTORE_STORE_PASSWORD` | mot de passe du store |
+  | `POTATO_KEYSTORE_KEY_PASSWORD` | mot de passe de la clé (ici = store password) |
+  | `POTATO_KEYSTORE_ALIAS` | `potato` |
+- **Côté local** : `android/app/build.gradle` pointe sur le keystore via la
+  variable d'env `POTATO_KEYSTORE_FILE` (+ `POTATO_KEYSTORE_STORE_PASSWORD`,
+  `POTATO_KEYSTORE_KEY_PASSWORD`, `POTATO_KEYSTORE_ALIAS`). Sans ces variables,
+  il retombe sur la signature debug automatique (dev uniquement).
+- **Versioning automatique** : en CI, `versionCode = numéro de run GitHub`
+  (toujours croissant) et `versionName = tag` (ex. `v2.0.0`) ou `0.0.0-ci<n>`.
+  Localement, `versionCode` est volontairement élevé (2 000 000) pour pouvoir
+  installer un build local par-dessus un build CI, et inversement.
+
+**Ce qui est garanti au moment d'une mise à jour d'APK :**
+- **Même signature** → Android autorise l'installation **par-dessus** l'ancienne
+  version (pas de désinstallation).
+- **Même `applicationId`** (`com.alexandrelebegue.potatoclicker`) +
+  `versionCode` **strictement supérieur** → la mise à jour est acceptée.
+- **La sauvegarde survit** : elle est dans `localStorage`, qui n'est pas touché
+  par une mise à jour par-dessus (seule une *désinstallation* l'efface).
+- En plus, la sauvegarde est **versionnée** (format `version`, avec
+  **migrations** v1→v2 dans `lib/persistence.ts`) : une ancienne sauvegarde est
+  lue et **ré-écrite** au nouveau format sans perte, et une sauvegarde
+  illisible n'est **jamais effacée** (mise de côté dans
+  `potato-farm-save-backup`).
+- **Filet de sécurité** : dans les réglages, **Exporter / Importer** la
+  sauvegarde en **code texte** (`POTATO2:…`) : exportez avant une mise à jour
+  risquée, réimportez sur l'appareil suivant. L'import d'un code invalide ne
+  modifie jamais la partie actuelle.
+
+**Procédure recommandée pour mettre à jour sur un téléphone :**
+1. (Optionnel, prudence) *Réglages → Exporter la sauvegarde* → copier le code.
+2. Installer la nouvelle APK **par-dessus** l'ancienne (téléphone →
+   « Installer l'application »). La progression est conservée.
+3. Au 1er lancement, la sauvegarde v1 est migrée automatiquement au format v2.
+4. (Si besoin) *Réglages → Importer la sauvegarde* → coller le code.
+
 Le workflow GitHub **`.github/workflows/android.yml`** (push sur `main`,
-pull requests, ou manuel via *Actions*) fait exactement la même chose sur
-`ubuntu-latest` (Node 22, Java 21 Temurin) et **publie l'APK debug en
-artifact** : `potato-clicker-debug.apk`, téléchargeable dans l'onglet
-*Artifacts* de chaque run.
+pull requests, tags `v*`, ou manuel via *Actions*) fait exactement la même
+chose sur `ubuntu-latest` (Node 22, Java 21 Temurin) : il décode le keystore
+fixe, **signe l'APK** avec lui, et **publie** l'APK en **artifact**
+(`potato-clicker-debug.apk`, téléchargeable dans l'onglet *Artifacts*) ainsi
+qu'en **release GitHub** quand le trigger est un tag `v*`.
 
 ## 📁 Organisation
 
 ```
-app/                  # App Router (layout, page, globals.css : thème + keyframes)
+app/                  # App Router (layout, page, icon.svg, apple-icon,
+                      # favicon, manifest, globals.css : thème + keyframes)
 components/           # UI : PotatoSvg, SoilPlot, PotatoScene, Shop, TopBar,
                       # WeatherLayer, GoldenPotato, Toasts, FxLayer, modales…
 lib/
   data.ts             # définitions : bâtiments, améliorations, terres, succès,
-                      # météo, évolutions, constantes
+                      # météo, évolutions, constantes (dont clés de sauvegarde)
   game.ts             # formules pures : coûts, cps, clic, combo, prestige,
                       # hors-ligne, évolution, barème d'effets (testé)
   format.ts           # formatage des nombres (1.2K, 3.4M, aa, ab…) et durées
-  persistence.ts      # sauvegarde / chargement / assainissement localStorage
-  sound.ts            # sons Web Audio (optionnels, coupés par défaut)
+  persistence.ts      # sauvegarde versionnée : chargement, migration v1->v2,
+                      # mise de côté, assainissement, export/import de code
+  audio.ts            # AudioContext partagé + buses master/effets/musique
+  music.ts            # lecteur « MIDI-like » Web Audio (oscillateurs),
+                      # mode « 1 clic = 1 note »
+  musicTracks.ts      # les 7 morceaux stockés en notes (+ prix en graines)
+  sound.ts            # sons d'effets Web Audio (sur la bus « effets »)
   fx.ts               # bus d'événements pour les effets visuels
 store/useGame.ts      # store zustand : boucle de jeu (tick 250 ms), achats,
-                      # arrosage, prestige, météo, patate dorée, autosave
+                      # arrosage, prestige, météo, patate dorée, musique,
+                      # réglages, export/import, autosave
+assets/icon/          # source SVG de l'icône (patate cartoon)
+scripts/
+  generate-icons.mjs  # génère toutes les icônes (Android + web) depuis le SVG
+  visual-check.mjs    # vérification layout Playwright (360×740, 412×915, desktop)
 tests/                # tests vitest de la logique pure
+tests/screenshots/    # captures de la vérification visuelle
 ```
