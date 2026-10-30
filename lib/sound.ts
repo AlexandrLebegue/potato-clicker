@@ -1,30 +1,16 @@
-// Sons optionnels via Web Audio API (pas d'assets externes).
-// Coups par défaut ; le bouton mute active/désactive.
+// Sons d'interface (effets) via Web Audio API, sur la bus « fx » partagée
+// (lib/audio.ts). Aucun asset externe. Coups par défaut ; le réglage global
+// « couper le son » passe le master à 0.
+
+import { getAudio, setMuted } from "./audio";
 
 type SoundName = "click" | "buy" | "golden" | "toast" | "denied" | "prestige" | "weather";
 
-let ctx: AudioContext | null = null;
 let enabled = false;
-
-function ac(): AudioContext | null {
-  if (typeof window === "undefined") return null;
-  try {
-    if (!ctx) {
-      const Ctor =
-        window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!Ctor) return null;
-      ctx = new Ctor();
-    }
-    if (ctx.state === "suspended") void ctx.resume();
-    return ctx;
-  } catch {
-    return null;
-  }
-}
 
 function tone(
   ctx: AudioContext,
+  out: GainNode,
   freq: number,
   at: number,
   dur: number,
@@ -38,48 +24,55 @@ function tone(
   gain.gain.setValueAtTime(0.0001, at);
   gain.gain.exponentialRampToValueAtTime(vol, at + 0.01);
   gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  osc.connect(gain).connect(ctx.destination);
+  osc.connect(gain).connect(out);
   osc.start(at);
   osc.stop(at + dur + 0.02);
 }
 
-export function setSoundEnabled(on: boolean): void {
-  enabled = on;
-}
-
+/** Le son global est-il activé (bouton du bandeau) ? */
 export function isSoundEnabled(): boolean {
   return enabled;
 }
 
+export function setSoundEnabled(on: boolean): void {
+  enabled = on;
+  setMuted(!on);
+}
+
 export function playSound(name: SoundName): void {
   if (!enabled) return;
-  const c = ac();
-  if (!c) return;
-  const t = c.currentTime;
+  const a = getAudio();
+  if (!a) return; // pas encore d'interaction utilisateur : audio non débloqué
+  const t = a.ctx.currentTime;
+  const out = a.fx;
   switch (name) {
     case "click":
-      tone(c, 520 + Math.random() * 160, t, 0.07, "triangle", 0.05);
+      tone(a.ctx, out, 520 + Math.random() * 160, t, 0.07, "triangle", 0.05);
       break;
     case "buy":
-      tone(c, 420, t, 0.09, "square", 0.05);
-      tone(c, 640, t + 0.08, 0.12, "square", 0.05);
+      tone(a.ctx, out, 420, t, 0.09, "square", 0.05);
+      tone(a.ctx, out, 640, t + 0.08, 0.12, "square", 0.05);
       break;
     case "golden":
-      [660, 880, 1100, 1320].forEach((f, i) => tone(c, f, t + i * 0.07, 0.1, "triangle", 0.06));
+      [660, 880, 1100, 1320].forEach((f, i) =>
+        tone(a.ctx, out, f, t + i * 0.07, 0.1, "triangle", 0.06)
+      );
       break;
     case "toast":
-      tone(c, 880, t, 0.12, "sine", 0.05);
-      tone(c, 1174, t + 0.1, 0.16, "sine", 0.05);
+      tone(a.ctx, out, 880, t, 0.12, "sine", 0.05);
+      tone(a.ctx, out, 1174, t + 0.1, 0.16, "sine", 0.05);
       break;
     case "denied":
-      tone(c, 140, t, 0.12, "sawtooth", 0.04);
+      tone(a.ctx, out, 140, t, 0.12, "sawtooth", 0.04);
       break;
     case "prestige":
-      [330, 440, 550, 660, 880].forEach((f, i) => tone(c, f, t + i * 0.09, 0.14, "triangle", 0.06));
+      [330, 440, 550, 660, 880].forEach((f, i) =>
+        tone(a.ctx, out, f, t + i * 0.09, 0.14, "triangle", 0.06)
+      );
       break;
     case "weather":
-      tone(c, 260, t, 0.2, "sine", 0.04);
-      tone(c, 390, t + 0.18, 0.25, "sine", 0.04);
+      tone(a.ctx, out, 260, t, 0.2, "sine", 0.04);
+      tone(a.ctx, out, 390, t + 0.18, 0.25, "sine", 0.04);
       break;
   }
 }
